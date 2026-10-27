@@ -42,6 +42,27 @@ jobs:
         with:
           flutter-version: '3.22.2'
           channel: stable
+      - name: Override old D8 and R8 used by AGP 7.4.2
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('chrono/android/settings.gradle')
+          text = p.read_text()
+          marker = 'pluginManagement {'
+          assert text.count(marker) == 1
+          replacement = """pluginManagement {
+              buildscript {
+                  repositories {
+                      mavenCentral()
+                      maven { url = uri("https://storage.googleapis.com/r8-releases/raw") }
+                  }
+                  dependencies {
+                      classpath("com.android.tools:r8:8.1.44")
+                  }
+              }"""
+          p.write_text(text.replace(marker, replacement, 1))
+          print('Added R8 8.1.44 override to settings.gradle')
+          PY
       - name: Install dependencies
         working-directory: chrono
         run: flutter pub get
