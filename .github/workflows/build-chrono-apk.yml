@@ -1,0 +1,43 @@
+name: Build Chrono Volume Fix APK
+on:
+  push:
+    branches:
+      - chrono-volfix-build-20261027
+  workflow_dispatch:
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout patch repo
+        uses: actions/checkout@v4
+      - name: Checkout upstream Chrono v0.6.0
+        uses: actions/checkout@v4
+        with:
+          repository: vicolo-dev/chrono
+          ref: v0.6.0
+          path: chrono
+          persist-credentials: false
+      - name: Apply fix
+        run: cp chrono-build/ringtone_player.dart chrono/lib/audio/types/ringtone_player.dart
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.22.2'
+          channel: stable
+      - name: Install dependencies
+        working-directory: chrono
+        run: flutter pub get
+      - name: Build Android debug APK (dev variant)
+        working-directory: chrono
+        run: flutter build apk --debug --flavor dev
+      - name: Upload installable APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: chrono-v0.6.0-volume-fix-debug-apk
+          path: chrono/build/app/outputs/flutter-apk/*-debug.apk
+          if-no-files-found: error
+          retention-days: 14
