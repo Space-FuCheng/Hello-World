@@ -159,7 +159,8 @@ class RingtonePlayer {
         }
         final progress = (stopwatch.elapsed.inMilliseconds /
                 duration.inMilliseconds)
-            .clamp(0.0, 1.0);
+            .clamp(0.0, 1.0)
+            .toDouble();
         await player.setVolume(targetVolume * progress);
         await Future<void>.delayed(const Duration(milliseconds: 100));
       }
