@@ -1,4 +1,4 @@
-name: Build Chrono Volume Fix APK
+name: Build Chrono Volume Fix ARM64 Release APK
 on:
   push:
     branches:
@@ -66,13 +66,27 @@ jobs:
       - name: Install dependencies
         working-directory: chrono
         run: flutter pub get
-      - name: Build Android debug APK (dev variant)
+      - name: Sign experimental release APK with temporary debug keystore
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("chrono/android/app/build.gradle")
+          src = p.read_text()
+          needle = "signingConfig signingConfigs.release"
+          assert src.count(needle) == 1, "Expected one release signing config"
+          p.write_text(src.replace(needle, "signingConfig signingConfigs.debug"))
+          PY
+      - name: Build optimized ARM64 release APK (dev variant)
         working-directory: chrono
-        run: flutter build apk --debug --flavor dev
-      - name: Upload installable APK
+        run: flutter build apk --release --flavor dev --target-platform android-arm64 --split-per-abi
+      - name: Report APK size
+        run: |
+          ls -lh chrono/build/app/outputs/flutter-apk/*-release.apk
+          du -h chrono/build/app/outputs/flutter-apk/*-release.apk
+      - name: Upload optimized APK
         uses: actions/upload-artifact@v4
         with:
-          name: chrono-v0.6.0-volume-fix-debug-apk
-          path: chrono/build/app/outputs/flutter-apk/*-debug.apk
+          name: chrono-v0.6.0-volume-fix-arm64-release
+          path: chrono/build/app/outputs/flutter-apk/*-release.apk
           if-no-files-found: error
           retention-days: 14
