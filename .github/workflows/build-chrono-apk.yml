@@ -66,9 +66,6 @@ jobs:
       - name: Install dependencies
         working-directory: chrono
         run: flutter pub get
-      - name: Verify selected LiveData dependency version
-        working-directory: chrono/android
-        run: ./gradlew :app:dependencyInsight --configuration devDebugRuntimeClasspath --dependency lifecycle-livedata-core --no-daemon
       - name: Build Android debug APK (dev variant)
         working-directory: chrono
         run: flutter build apk --debug --flavor dev
