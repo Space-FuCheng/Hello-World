@@ -20,6 +20,23 @@ jobs:
           persist-credentials: false
       - name: Apply fix
         run: cp chrono-build/ringtone_player.dart chrono/lib/audio/types/ringtone_player.dart
+      - name: Pin AndroidX LiveData version for legacy Android Gradle plugin
+        run: |
+          cat >> chrono/android/build.gradle <<'GRADLE'
+
+          // Work around D8 incompatibility between AGP 7.4.2 and LiveData 2.8.5
+          // in Chrono v0.6.0. Keep this isolated to the experimental build.
+          allprojects {
+              configurations.all {
+                  resolutionStrategy {
+                      force 'androidx.lifecycle:lifecycle-livedata-core:2.6.1'
+                  }
+              }
+          }
+          GRADLE
+      - name: Verify selected LiveData dependency version
+        working-directory: chrono/android
+        run: ./gradlew :app:dependencyInsight --configuration devDebugRuntimeClasspath --dependency lifecycle-livedata-core --no-daemon
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
