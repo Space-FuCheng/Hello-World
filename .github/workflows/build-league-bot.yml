@@ -1,0 +1,54 @@
+name: Build League-Bot (Windows)
+
+on:
+  push:
+    branches:
+      - ci/build-league-bot-2026-11
+    paths:
+      - .github/workflows/build-league-bot.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-2022
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout upstream League-Bot
+        uses: actions/checkout@v4
+        with:
+          repository: Bxcchus/League-Bot
+          ref: fc0252c41b427816ab1a1e664107790ebdcaadfd
+          path: upstream
+          persist-credentials: false
+
+      - name: Set up NuGet
+        uses: NuGet/setup-nuget@v2
+
+      - name: Set up MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Restore NuGet packages
+        shell: pwsh
+        run: |
+          nuget restore "upstream/LeagueBot/Sources/LeagueBot.sln" -NonInteractive
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Build Windows executable
+        shell: pwsh
+        run: |
+          $solutionDir = (Resolve-Path "upstream/LeagueBot/Sources").Path + "\"
+          msbuild "upstream/LeagueBot/Sources/LeagueBot/LeagueBot.csproj" /t:Build /m /p:Configuration=Debug /p:Platform=AnyCPU "/p:SolutionDir=$solutionDir" /verbosity:minimal
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          if (!(Test-Path "upstream/LeagueBot/Binaries/LeagueBot.exe")) { throw "LeagueBot.exe was not produced." }
+
+      - name: Upload executable and resources
+        uses: actions/upload-artifact@v4
+        with:
+          name: LeagueBot-Windows-Debug
+          path: upstream/LeagueBot/Binaries/**
+          if-no-files-found: error
+          retention-days: 7
